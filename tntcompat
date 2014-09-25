@@ -11,7 +11,7 @@ use TntCompat::Server;
 use TntCompat::Config;
 use Data::Dumper;
 
-our $VERSION = '0.1';
+our $VERSION = '0.2';
 
 
 die "Usage: $0 myconfig.conf\n" unless $ARGV[0] and -r $ARGV[0];
@@ -62,29 +62,50 @@ Example:
             server_uuid => '80c88296-f1db-4aab-ad9c-b4e3f8511d16',
             bootstrap   => 'tntcompat/bootsrap.snap',
 
-            schema  => {
-
+            schema => {
                 0   => {
-                    name    => 'counts',
-
-                    fields  => {
-                        0   => 'NUM',
-                        1   => 'NUM',
-                        2   => 'NUM',
-                    },
+                    name            => 'users',
+                    default_field_type    => 'STR',
+                    fields  => [
+                        'id',
+                        'name'
+                    ],
 
                     indexes => [
                         {
-                            fields  => [ 0 => 'num' ],
-                            type    => 'tree',
+                            name => 'pk',
+                            fields => 'id'
+                        },
+                    ]
+                },
+                1   => {
+                    name            => 'roles',
+                    default_field_type    => 'STR',
+                    fields  => [
+                        {
+                            name    => 'id',
+                            type    => 'STR',
+                        },
+                        'name',
+                        {
+                            name    => 'options',
+                            type    => 'JSON',
+                        }
+                    ],
+
+                    indexes => [
+                        {
+                            name    => 'pk',
+                            fields  => 'id'
                         },
                         {
-                            fields  => [ 0 => 'str' ],
-                            name    => 'last_index',
-                            type    => 'hash',
+                            name    => 'name',
+                            fields  => [ 'name' ],
+                            unique  => 1
                         }
                     ]
-                }
+                },
+                # here can be the other spaces
             }
         }
 

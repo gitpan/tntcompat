@@ -4,7 +4,9 @@ tarantool 1.5 to 1.6 stream database converter.
 
 ## DOCS
 
-See `perldoc tntcompat`
+See `perldoc tntcompat`.
+Online the documentation is placed on
+[cpan](http://search.cpan.org/~unera/tntcompat/tntcompat).
 
 
 ## INSTALATION
