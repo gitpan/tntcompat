@@ -1,0 +1,265 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+
+use utf8;
+use open qw(:std :utf8);
+
+use lib qw(lib);
+use TntCompat::Server;
+use TntCompat::Config;
+use Data::Dumper;
+
+our $VERSION = '0.1';
+
+
+die "Usage: $0 myconfig.conf\n" unless $ARGV[0] and -r $ARGV[0];
+
+local $Data::Dumper::Indent = 1;
+local $Data::Dumper::Terse = 1;
+local $Data::Dumper::Useqq = 1;
+local $Data::Dumper::Deepcopy = 1;
+local $Data::Dumper::Maxdepth = 0;
+
+
+my $cfg = TntCompat::Config->new($ARGV[0]);
+my $server = TntCompat::Server->new($cfg);
+$server->run;
+
+
+=head1 NAME
+
+tntcompat - tarantool 1.5 to 1.6 stream database converter
+
+=head1 SYNOPSIS
+
+    tntcompat myconfig.conf
+
+=head1 DESCRIPTION
+
+Binds server that listen connections from tarantool 1.6.
+Send them tarantool 1.5 database from local disk.
+
+Use the utility at the host with B<tarantool> 1.5 database.
+
+=head2 CONFIG file
+
+The config is a Perl hash that contains several fields.
+Example:
+
+        $ cat myconfig.conf
+        # vim: set ft=perl :
+        {
+            host        => '127.0.0.1',
+            port        => 3456,
+
+            user        => 'username',
+            password    => 'password',
+
+            snap_dir    => '/srv/mytarantool1.5/snap_dir/',
+            wal_dir     => '/srv/mytarantool1.5/wal_dir/',
+            server_uuid => '80c88296-f1db-4aab-ad9c-b4e3f8511d16',
+            bootstrap   => 'tntcompat/bootsrap.snap',
+
+            schema  => {
+
+                0   => {
+                    name    => 'counts',
+
+                    fields  => {
+                        0   => 'NUM',
+                        1   => 'NUM',
+                        2   => 'NUM',
+                    },
+
+                    indexes => [
+                        {
+                            fields  => [ 0 => 'num' ],
+                            type    => 'tree',
+                        },
+                        {
+                            fields  => [ 0 => 'str' ],
+                            name    => 'last_index',
+                            type    => 'hash',
+                        }
+                    ]
+                }
+            }
+        }
+
+=head3 Config options
+
+=over
+
+=item host, port, user, password
+
+Server's bind and auth options.
+
+=item snap_dir, wal_dir
+
+Paths to tarantool 1.5 files.
+
+=item skip_spaces
+
+Array with space numbers that should not be sent to 1.6.
+
+=item schema
+
+A hash that describes 1.5 database structure (and how to convert it to 1.6).
+Each 1.5 space must be defined in this hash (exclude spaces in L<skip_spaces>).
+
+Example:
+
+    schema => {
+        0   => {
+            name            => 'services',
+            default_field_type    => 'STR',
+            fields  => [
+                {
+                    name    => 'sid',
+                    type    => 'STR',
+                },
+                {
+                    name    => 'title',
+                    type    => 'STR',
+                },
+                {
+                    name    => 'balance',
+                    type    => 'NUM', # 'MONEY'
+                },
+                {
+                    name    => 'locked_balance',
+                    type    => 'NUM', # 'MONEY',
+                },
+                {
+                    name    => 'cfg',
+                    type    => 'JSON',
+                },
+                {
+                    name    => 'disabled_flags',
+                    type    => 'NUM',
+                }
+            ],
+
+            indexes => [
+                {
+                    name => 'sid',
+                    fields => 'sid'
+                },
+                {
+                    name => 'title',
+                    fields => [ 'title', 'name' ]
+                    unique => 1
+                },
+                {
+                    name => 'disabled_flags',
+                    fields => 'disabled_flags'
+                }
+            ]
+        },
+        # here can be the other spaces
+    }
+
+Each hash of space can contain the fields:
+
+=over
+
+=item name
+
+Name of the space. If the field is absent, tntcompat will use pattern
+C<"space_$spaceno">.
+
+=item default_field_type
+
+Type of fields that are not described by the hash.
+
+=item fields
+
+Field's definitions.
+Each item of the list can be:
+
+=over
+
+=item scalar
+
+Name of the field.
+
+=item hash
+
+Full definition of the field. The hash can contain field C<name> - name
+of the field (if the field is absent, tntcompat will use pattern
+C<"field_$fieldno">) and C<type> - type of field.
+
+Now B<tntcompat> provides the following types:
+
+=over
+
+=item NUM
+
+32-bit unsigned.
+
+=item NUM64
+
+64-bit unsigned.
+
+=item STR
+
+String
+
+=item JSON
+
+JSON string. The string will be decoded to object and placed as object
+in B<1.6>.
+
+=back
+
+=back
+
+=item indexes
+
+Array of index definitions.
+The first index always forced as C<unique=1>.
+
+Each index can contain the following fields:
+
+=over
+
+=item name
+
+Name of the index.
+
+=item fields
+
+Name or name of indexed fields (see L<fields> definition).
+
+=item unique
+
+True if the index is unique.
+
+=back
+
+=back
+
+=back
+
+=cut
+
+
+=head1 DEBUG
+
+B<tntcompat> prints its log to B<STDERR>. By default the feature is disabled.
+Set environment variable C<DEBUG> to value C<1> to enable logging.
+
+Also the utility is not a daemon. If You want to start it from Your C<init>,
+You can use special wrappers like C<start-stop-daemon>, C<runit>, etc.
+
+=head1 COPYRIGHT
+
+Copyright (C) 2014, Dmitry E. Oboukhov L<mailto:unera@debian.org>
+
+=head1 LICENSE
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.8.8 or,
+at your option, any later version of Perl 5 you may have available.
