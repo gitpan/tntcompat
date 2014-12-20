@@ -28,6 +28,7 @@ requires:
   Encode: 0
   Errno: 0
   JSON::XS: 0
+  List::MoreUtils: 0
   MIME::Base64: 0
   Scalar::Util: 0
   Time::HiRes: 0
@@ -36,4 +37,4 @@ resources:
   bugtracker: https://github.com/tarantool/compat-flow/issues
   homepage: https://github.com/tarantool/compat-flow
   repository: https://github.com/tarantool/compat-flow
-version: 0.3
+version: 0.4

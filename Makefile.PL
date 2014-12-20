@@ -5,6 +5,7 @@ WriteMakefile(
     VERSION_FROM      => 'tntcompat',
     PREREQ_PM         => {
         'AnyEvent::Socket'  => 0,
+        'List::MoreUtils'   => 0,
         'Carp'              => 0,
         'Coro'              => 0,
         'Coro::AnyEvent'    => 0,
